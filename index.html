@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8e8e93">
+  <title>Quadrant Activities</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Oswald:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="viewport">
+    <div class="scale-shell" id="scaleShell">
+      <div class="stage" id="stage" role="application" aria-label="App canvas 1179 by 2556 pixels">
+        <div class="stage-inner">
+          <section class="events-panel" aria-label="Events">
+            <div class="events-panel__inner" id="events-panel-inner">
+              <header class="events-panel__header">
+                <span class="events-panel__header-edge" aria-hidden="true"></span>
+                <h2 class="events-panel__title" id="events-things-hint">
+                  <span id="events-things-count" class="events-panel__things-count" aria-live="polite">500</span>
+                  things to try
+                </h2>
+                <div class="events-panel__header-edge">
+                  <button type="button" class="events-panel__all" id="events-reset-all" aria-label="Clear filters and show all events">
+                    ALL
+                  </button>
+                </div>
+              </header>
+              <div
+                class="events-time-stack"
+                id="events-time-stack"
+                role="region"
+                aria-label="Events by time"
+                tabindex="0"
+              >
+                <section class="events-time-slot" data-time-row="coming_up" aria-label="Coming up">
+                  <button
+                    type="button"
+                    class="events-time-heading"
+                    id="events-time-row-coming"
+                    data-time-row="coming_up"
+                    aria-pressed="false"
+                  >
+                    Coming up
+                  </button>
+                  <div class="events-time-slot__body" id="events-time-body-coming" hidden></div>
+                </section>
+                <section class="events-time-slot events-time-slot--selected" data-time-row="today" aria-label="Today">
+                  <button
+                    type="button"
+                    class="events-time-heading events-time-heading--active"
+                    id="events-time-row-today"
+                    data-time-row="today"
+                    aria-pressed="true"
+                  >
+                    Today
+                  </button>
+                  <div class="events-time-slot__body" id="events-time-body-today">
+                    <div
+                      class="events-carousel"
+                      id="events-carousel"
+                      aria-roledescription="carousel"
+                      aria-label="Paris events"
+                      aria-labelledby="events-time-row-today"
+                    >
+                      <div class="events-carousel__track" id="events-carousel-track"></div>
+                    </div>
+                  </div>
+                </section>
+                <section class="events-time-slot" data-time-row="ongoing" aria-label="Ongoing">
+                  <button
+                    type="button"
+                    class="events-time-heading"
+                    id="events-time-row-ongoing"
+                    data-time-row="ongoing"
+                    aria-pressed="false"
+                  >
+                    Ongoing
+                  </button>
+                  <div class="events-time-slot__body" id="events-time-body-ongoing" hidden></div>
+                </section>
+              </div>
+            </div>
+          </section>
+          <section class="input-panel" aria-label="Message">
+            <form class="chat-bar" id="chat-form" action="#" autocomplete="off" aria-label="Describe what you want">
+              <div class="chat-bar__row">
+                <input
+                  class="chat-input"
+                  id="chat-input"
+                  name="chat"
+                  type="text"
+                  autocomplete="off"
+                  enterkeyhint="send"
+                  inputmode="text"
+                  placeholder="You're thinking..."
+                  aria-label="You're thinking"
+                >
+                <button type="submit" class="chat-bar__go" id="chat-go" aria-label="Run search" title="Go">
+                  <svg class="chat-bar__go-icon" viewBox="0 0 24 24" width="48" height="48" aria-hidden="true" focusable="false">
+                    <polygon points="7 4 20 12 7 20" fill="currentColor" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </section>
+          <section class="presentation" aria-label="Presentation">
+            <div
+              id="overlay-map"
+              class="presentation-overlay presentation-overlay--map"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="map-legend"
+              aria-hidden="true"
+              hidden
+            >
+              <h2 id="map-legend" class="presentation-overlay__legend">Where</h2>
+              <div id="map-paris" class="presentation-map" aria-label="Map of Paris"></div>
+              <p class="presentation-map__attr">© OpenStreetMap contributors · © CARTO</p>
+            </div>
+
+            <div
+              id="overlay-people"
+              class="presentation-overlay presentation-overlay--people"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="people-legend"
+              aria-hidden="true"
+              hidden
+            >
+              <h2 id="people-legend" class="presentation-overlay__legend">WHO</h2>
+              <div class="people-deck">
+                <div
+                  class="people-scroll"
+                  tabindex="0"
+                  role="region"
+                  aria-label="Who is going"
+                >
+                  <ul class="people-grid" role="group" aria-label="Group type">
+                    <li>
+                      <button type="button" class="people-card" aria-pressed="false" aria-label="Just me">
+                        <span class="people-card__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        </span>
+                        <span class="people-card__label">just me</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" class="people-card" aria-pressed="false" aria-label="Date">
+                        <span class="people-card__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                          </svg>
+                        </span>
+                        <span class="people-card__label">date</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" class="people-card" aria-pressed="false" aria-label="With kids">
+                        <span class="people-card__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="9" r="3" />
+                            <path d="M8 21v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1" />
+                            <circle cx="18" cy="6" r="2" />
+                            <path d="M18 9v3" />
+                          </svg>
+                        </span>
+                        <span class="people-card__label">with kids</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" class="people-card" aria-pressed="false" aria-label="Out with friends">
+                        <span class="people-card__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                          </svg>
+                        </span>
+                        <span class="people-card__label">out with friends</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" class="people-card" aria-pressed="false" aria-label="Colleagues">
+                        <span class="people-card__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                          </svg>
+                        </span>
+                        <span class="people-card__label">colleagues</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button type="button" class="people-card" aria-pressed="false" aria-label="Older visitors">
+                        <span class="people-card__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="8" cy="6" r="2.5" />
+                            <path d="M5 21v-4a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v4" />
+                            <circle cx="16" cy="6" r="2.5" />
+                            <path d="M13 21v-4a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v4" />
+                            <path d="M20 3v4M18 5h4" />
+                          </svg>
+                        </span>
+                        <span class="people-card__label">older visitors</span>
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="overlay-activities"
+              class="presentation-overlay presentation-overlay--activities"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="activities-legend"
+              aria-hidden="true"
+              hidden
+            >
+              <h2 id="activities-legend" class="presentation-overlay__legend">WHAT</h2>
+              <div class="activity-grid" id="activity-grid"></div>
+            </div>
+
+            <div
+              id="overlay-mood"
+              class="presentation-overlay presentation-overlay--mood"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mood-legend"
+              aria-hidden="true"
+              hidden
+            >
+              <h2 id="mood-legend" class="presentation-overlay__legend">WHY</h2>
+              <div class="mood-deck" id="mood-deck">
+                <!-- cards injected by app.js -->
+              </div>
+            </div>
+
+            <button type="button" class="presentation-corner presentation-corner--tl" data-overlay="map" aria-label="Map" aria-pressed="false">
+              <span class="presentation-corner__quarter" aria-hidden="true"></span>
+              <svg
+                class="presentation-corner__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </button>
+            <button type="button" class="presentation-corner presentation-corner--tr" data-overlay="people" aria-label="People" aria-pressed="false">
+              <span class="presentation-corner__quarter" aria-hidden="true"></span>
+              <span class="presentation-corner__filter-badge" hidden aria-hidden="true"></span>
+              <svg
+                class="presentation-corner__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </button>
+            <button type="button" class="presentation-corner presentation-corner--bl" data-overlay="activities" aria-label="Activities" aria-pressed="false">
+              <span class="presentation-corner__quarter" aria-hidden="true"></span>
+              <span class="presentation-corner__filter-badge" hidden aria-hidden="true"></span>
+              <svg
+                class="presentation-corner__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M10 3h2v2l-1 1.5c-.8 2.2-.5 4.6.8 6.5l2.2 3.3c1.4 2.1 1.6 4.8.5 7.1-.6 1.2-1.8 2.1-3.2 2.1-1.6 0-2.8-1.3-2.8-2.9 0-1.1.6-2.1 1.5-2.6l1.8-1" />
+                <path d="M13 5.5c1.2 1.8 3.5 2.5 5.5 1.5l1.5-.8" />
+                <ellipse cx="7" cy="19" rx="3" ry="2.2" />
+              </svg>
+            </button>
+            <button type="button" class="presentation-corner presentation-corner--br" data-overlay="mood" aria-label="Mood" aria-pressed="false">
+              <span class="presentation-corner__quarter" aria-hidden="true"></span>
+              <span class="presentation-corner__filter-badge" hidden aria-hidden="true"></span>
+              <svg
+                class="presentation-corner__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                <line x1="9" x2="9.01" y1="9" y2="9" />
+                <line x1="15" x2="15.01" y1="9" y2="9" />
+              </svg>
+            </button>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="paris-real-venues.js"></script>
+  <script src="paris-real-venues-fill.js"></script>
+  <script src="events-data.js"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
