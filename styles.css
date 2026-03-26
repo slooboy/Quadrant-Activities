@@ -149,6 +149,8 @@ body {
   outline: none;
   transition: transform 0.38s cubic-bezier(0.22, 0.9, 0.32, 1);
   will-change: transform;
+  /* Match .events-carousel: let pointer events drive row + card gestures on touch (no browser pan stealing). */
+  touch-action: none;
 }
 
 .events-time-stack.events-time-stack--dragging {

@@ -1588,8 +1588,10 @@
     let animating = false;
 
     const timeStack = document.getElementById("events-time-stack");
-    const eventsPanelInner = document.getElementById("events-panel-inner");
     const TIME_ROW_ORDER = ["coming_up", "today", "ongoing"];
+    /** Same dead zone / angle ratio as the horizontal carousel so vertical vs horizontal intent matches. */
+    const ROW_GESTURE_DEAD_PX = 14;
+    const ROW_GESTURE_AXIS_RATIO = 1.15;
 
     /** Normalize wheel delta so trackpads and mouse wheels both change rows reliably. */
     function normalizedWheelAxis(ev, axis) {
@@ -1631,9 +1633,11 @@
     let lastTimeRowWheelMs = 0;
 
     const ROW_DRAG_STEP = 120;
-    const ROW_DRAG_THRESHOLD = ROW_DRAG_STEP * 0.35;
+    /** How far you must drag before releasing to change rows (lower = easier on touch). */
+    const ROW_DRAG_THRESHOLD = ROW_DRAG_STEP * 0.24;
     let rowDragTranslate = 0;
     let rowDragPointerId = null;
+    let rowPointerCaptured = false;
     let rowDragActive = false;
     let rowDragSettling = false;
     let rowDragStartY = 0;
@@ -1685,11 +1689,19 @@
 
       rowDragPointerId = null;
       rowDragActive = false;
-      rowDragSettling = true;
       timeStack.classList.remove("events-time-stack--dragging");
 
       if (delta === 0) {
         const start = t;
+        /* translateY(0)→translateY(0) does not run a transition; transitionend never fires and rowDragSettling stays true forever. */
+        if (Math.abs(start) < 1) {
+          timeStack.style.transform = "";
+          timeStack.classList.remove("events-time-stack--drag-anim");
+          rowDragTranslate = 0;
+          rowDragSettling = false;
+          return;
+        }
+        rowDragSettling = true;
         timeStack.classList.add("events-time-stack--drag-anim");
         timeStack.style.transform = `translateY(${start}px)`;
         requestAnimationFrame(() => {
@@ -1697,18 +1709,27 @@
             timeStack.style.transform = "translateY(0)";
           });
         });
-        const once = (e) => {
-          if (e.propertyName !== "transform") return;
+        let finished = false;
+        const cleanup = () => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(failSafe);
           timeStack.removeEventListener("transitionend", once);
           timeStack.style.transform = "";
           timeStack.classList.remove("events-time-stack--drag-anim");
           rowDragTranslate = 0;
           rowDragSettling = false;
         };
+        const once = (e) => {
+          if (e.propertyName !== "transform") return;
+          cleanup();
+        };
+        const failSafe = window.setTimeout(cleanup, 480);
         timeStack.addEventListener("transitionend", once);
         return;
       }
 
+      rowDragSettling = true;
       const target = delta > 0 ? ROW_DRAG_STEP : -ROW_DRAG_STEP;
       timeStack.classList.add("events-time-stack--drag-anim");
       timeStack.style.transform = `translateY(${t}px)`;
@@ -1717,13 +1738,21 @@
           timeStack.style.transform = `translateY(${target}px)`;
         });
       });
-      const once = (e) => {
-        if (e.propertyName !== "transform") return;
-        timeStack.removeEventListener("transitionend", once);
+      let finishedBump = false;
+      const cleanupBump = () => {
+        if (finishedBump) return;
+        finishedBump = true;
+        window.clearTimeout(failSafeBump);
+        timeStack.removeEventListener("transitionend", onceBump);
         bumpTimeRow(delta);
         rowDragSettling = false;
       };
-      timeStack.addEventListener("transitionend", once);
+      const onceBump = (e) => {
+        if (e.propertyName !== "transform") return;
+        cleanupBump();
+      };
+      const failSafeBump = window.setTimeout(cleanupBump, 480);
+      timeStack.addEventListener("transitionend", onceBump);
     }
 
     function smoothBumpTimeRow(delta) {
@@ -1744,15 +1773,23 @@
           timeStack.style.transform = `translateY(${slide}px)`;
         });
       });
-      const once = (e) => {
-        if (e.propertyName !== "transform") return;
-        timeStack.removeEventListener("transitionend", once);
+      let finishedSmooth = false;
+      const cleanupSmooth = () => {
+        if (finishedSmooth) return;
+        finishedSmooth = true;
+        window.clearTimeout(failSafeSmooth);
+        timeStack.removeEventListener("transitionend", onceSmooth);
         bumpTimeRow(delta);
         rowDragSettling = false;
         timeStack.style.transform = "";
         timeStack.classList.remove("events-time-stack--drag-anim");
       };
-      timeStack.addEventListener("transitionend", once);
+      const onceSmooth = (e) => {
+        if (e.propertyName !== "transform") return;
+        cleanupSmooth();
+      };
+      const failSafeSmooth = window.setTimeout(cleanupSmooth, 480);
+      timeStack.addEventListener("transitionend", onceSmooth);
     }
 
     function applyTimeRowSlice() {
@@ -2050,8 +2087,8 @@
       if (carouselGesturePending && !dragging) {
         const dx = ev.clientX - startClientX;
         const dy = ev.clientY - startClientY;
-        if (Math.abs(dx) <= 14 && Math.abs(dy) <= 14) return;
-        if (Math.abs(dy) > Math.abs(dx) * 1.15) {
+        if (Math.abs(dx) <= ROW_GESTURE_DEAD_PX && Math.abs(dy) <= ROW_GESTURE_DEAD_PX) return;
+        if (Math.abs(dy) > Math.abs(dx) * ROW_GESTURE_AXIS_RATIO) {
           carouselGesturePending = false;
           pointerId = null;
           return;
@@ -2182,6 +2219,16 @@
       });
     });
 
+    function releaseRowPointerCapture(ev) {
+      if (!rowPointerCaptured || !timeStack) return;
+      try {
+        timeStack.releasePointerCapture(ev.pointerId);
+      } catch (_) {
+        /* ignore */
+      }
+      rowPointerCaptured = false;
+    }
+
     function onPointerDownRow(ev) {
       if (ev.button !== 0) return;
       if (rowDragSettling) return;
@@ -2199,13 +2246,19 @@
       const dy = ev.clientY - rowDragStartY;
       const dx = ev.clientX - rowDragStartX;
       if (!rowDragActive) {
-        if (Math.abs(dy) < 16 && Math.abs(dx) < 16) return;
-        if (Math.abs(dx) >= Math.abs(dy) * 0.95) {
+        if (Math.abs(dy) <= ROW_GESTURE_DEAD_PX && Math.abs(dx) <= ROW_GESTURE_DEAD_PX) return;
+        if (Math.abs(dx) > Math.abs(dy) * ROW_GESTURE_AXIS_RATIO) {
           rowDragPointerId = null;
           return;
         }
         rowDragActive = true;
         timeStack.classList.add("events-time-stack--dragging");
+        try {
+          timeStack.setPointerCapture(ev.pointerId);
+          rowPointerCaptured = true;
+        } catch (_) {
+          rowPointerCaptured = false;
+        }
       }
       ev.preventDefault();
       ev.stopPropagation();
@@ -2217,6 +2270,7 @@
 
     function onPointerUpRow(ev) {
       if (ev.pointerId !== rowDragPointerId) return;
+      releaseRowPointerCapture(ev);
       if (!rowDragActive) {
         rowDragPointerId = null;
         return;
@@ -2226,17 +2280,22 @@
 
     function onPointerCancelRow(ev) {
       if (ev.pointerId !== rowDragPointerId) return;
-      if (!rowDragActive) return;
+      releaseRowPointerCapture(ev);
+      if (!rowDragActive) {
+        rowDragPointerId = null;
+        return;
+      }
       settleRowDrag();
     }
 
-    if (eventsPanelInner) {
-      eventsPanelInner.addEventListener("pointerdown", onPointerDownRow, { capture: true });
-      eventsPanelInner.addEventListener("pointermove", onPointerMoveRow, { capture: true });
-      eventsPanelInner.addEventListener("pointerup", onPointerUpRow, { capture: true });
-      eventsPanelInner.addEventListener("pointercancel", onPointerCancelRow, { capture: true });
+    if (timeStack) {
+      /* Capture phase (same idea as carousel’s direct handlers + capture): see vertical intent before the carousel commits to horizontal. */
+      timeStack.addEventListener("pointerdown", onPointerDownRow, { capture: true });
+      timeStack.addEventListener("pointermove", onPointerMoveRow, { capture: true });
+      timeStack.addEventListener("pointerup", onPointerUpRow, { capture: true });
+      timeStack.addEventListener("pointercancel", onPointerCancelRow, { capture: true });
 
-      eventsPanelInner.addEventListener(
+      timeStack.addEventListener(
         "wheel",
         (e) => {
           if (rowDragSettling) return;
